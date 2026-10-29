@@ -1,14 +1,21 @@
-// src/TryOn.js
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Button, Grid, Paper, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Button,
+  Grid,
+  Paper,
+  CircularProgress,
+} from '@mui/material';
 import { Rnd } from 'react-rnd';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
 
 let uniqueIdCounter = 0;
+
 const generateUniqueId = () => {
-    uniqueIdCounter += 1;
-    return `overlay-${Date.now()}-${uniqueIdCounter}`;
+  uniqueIdCounter += 1;
+  return `overlay-${Date.now()}-${uniqueIdCounter}`;
 };
 
 const dummyProducts = [
@@ -23,48 +30,63 @@ const dummyProducts = [
 const TryOn = () => {
   const [avatarImage, setAvatarImage] = useState(null);
   const [overlays, setOverlays] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const avatarRef = useRef(null);
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedProduct = localStorage.getItem('virtualProduct');
-    if (storedProduct) {
-      try {
-        const productFromLocalStorage = JSON.parse(storedProduct);
 
-        if (!productFromLocalStorage.style) {
-          productFromLocalStorage.style = {
-            top: 100,
-            left: 100,
-            width: 120,
-            height: 150,
-          };
-        }
-        if (!productFromLocalStorage.id) {
-            productFromLocalStorage.id = generateUniqueId();
-        }
+    if (!storedProduct) return;
 
-        setOverlays([productFromLocalStorage]);
-        localStorage.removeItem('virtualProduct');
-      } catch (error) {
-        console.error("Failed to parse virtual product from localStorage:", error);
-        localStorage.removeItem('virtualProduct');
+    try {
+      const product = JSON.parse(storedProduct);
+
+      if (!product.style) {
+        product.style = {
+          top: 100,
+          left: 100,
+          width: 120,
+          height: 150,
+        };
       }
+
+      if (!product.id) {
+        product.id = generateUniqueId();
+      }
+
+      setOverlays([product]);
+      localStorage.removeItem('virtualProduct');
+    } catch (error) {
+      console.error('Failed to parse virtual product:', error);
+      localStorage.removeItem('virtualProduct');
     }
   }, []);
 
-  const handleAvatarUpload = (e) => {
-    if (e.target.files[0]) {
-      const imageURL = URL.createObjectURL(e.target.files[0]);
-      setAvatarImage(imageURL);
-      // If you want products to persist when new avatar is uploaded, keep this commented
-      // setOverlays([]);
+  useEffect(() => {
+    return () => {
+      if (avatarImage) {
+        URL.revokeObjectURL(avatarImage);
+      }
+    };
+  }, [avatarImage]);
+
+  const handleAvatarUpload = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload a valid image.');
+      return;
     }
+
+    const imageURL = URL.createObjectURL(file);
+    setAvatarImage(imageURL);
   };
 
   const runAutoFit = () => {
-    const mockFitPoints = {
+    const fitPoints = {
       wrist: { x: 280, y: 350 },
       torso: { x: 200, y: 200 },
       hip: { x: 200, y: 400 },
@@ -72,129 +94,141 @@ const TryOn = () => {
     };
 
     if (!avatarImage || overlays.length === 0) {
-      console.warn("Cannot perform auto-fit: No avatar uploaded or no products to fit.");
+      alert('Please upload an avatar and select a product.');
       return;
     }
 
-    setOverlays(prevOverlays =>
-      prevOverlays.map(item => {
+    setOverlays((previous) =>
+      previous.map((item) => {
         let point;
-        let targetWidth, targetHeight, offsetX, offsetY;
+        let width;
+        let height;
+        let offsetX;
+        let offsetY;
 
         switch (item.type) {
           case 'watch':
-            point = mockFitPoints.wrist;
-            targetWidth = 70;
-            targetHeight = 70;
-            offsetX = targetWidth / 2;
-            offsetY = targetHeight / 2;
+            point = fitPoints.wrist;
+            width = 70;
+            height = 70;
+            offsetX = width / 2;
+            offsetY = height / 2;
             break;
           case 'dress':
-            point = mockFitPoints.torso;
-            targetWidth = 200;
-            targetHeight = 300;
-            offsetX = targetWidth / 2;
+            point = fitPoints.torso;
+            width = 200;
+            height = 300;
+            offsetX = width / 2;
             offsetY = 30;
             break;
           case 'pants':
-            point = mockFitPoints.hip;
-            targetWidth = 180;
-            targetHeight = 250;
-            offsetX = targetWidth / 2;
+            point = fitPoints.hip;
+            width = 180;
+            height = 250;
+            offsetX = width / 2;
             offsetY = 50;
             break;
           case 'shirt':
-            point = mockFitPoints.torso;
-            targetWidth = 180;
-            targetHeight = 200;
-            offsetX = targetWidth / 2;
+            point = fitPoints.torso;
+            width = 180;
+            height = 200;
+            offsetX = width / 2;
             offsetY = 20;
             break;
           case 'glasses':
-            point = mockFitPoints.face;
-            targetWidth = 120;
-            targetHeight = 50;
-            offsetX = targetWidth / 2;
-            offsetY = targetHeight / 2;
+            point = fitPoints.face;
+            width = 120;
+            height = 50;
+            offsetX = width / 2;
+            offsetY = height / 2;
             break;
           case 'sherwani':
-            point = mockFitPoints.torso;
-            targetWidth = 220;
-            targetHeight = 400;
-            offsetX = targetWidth / 2;
+            point = fitPoints.torso;
+            width = 220;
+            height = 400;
+            offsetX = width / 2;
             offsetY = 50;
             break;
           default:
-            point = mockFitPoints.torso;
-            targetWidth = 100;
-            targetHeight = 150;
-            offsetX = targetWidth / 2;
-            offsetY = targetHeight / 2;
-            console.warn(`Unknown product type: ${item.type}. Using default fit.`);
-            break;
+            point = fitPoints.torso;
+            width = 100;
+            height = 150;
+            offsetX = width / 2;
+            offsetY = height / 2;
         }
-
-        const newLeft = point.x - offsetX;
-        const newTop = point.y - offsetY;
 
         return {
           ...item,
           style: {
-            left: Math.max(0, Math.min(newLeft, 400 - targetWidth)),
-            top: Math.max(0, Math.min(newTop, 600 - targetHeight)),
-            width: targetWidth,
-            height: targetHeight
-          }
+            left: Math.max(0, Math.min(point.x - offsetX, 400 - width)),
+            top: Math.max(0, Math.min(point.y - offsetY, 600 - height)),
+            width,
+            height,
+          },
         };
       })
     );
   };
 
   const handleOverlay = (product) => {
-    setOverlays(prev => [
-      ...prev,
+    setOverlays((previous) => [
+      ...previous,
       {
         ...product,
-        id: product.id || generateUniqueId(),
+        id: generateUniqueId(),
         style: {
           top: 100,
           left: 100,
           width: 120,
           height: 150,
         },
-      }
+      },
     ]);
   };
 
   const handleClearOverlays = () => {
     setOverlays([]);
   };
+
   const handleCreateAvatar = () => {
-    // Opens the MetaPerson avatar generator in a new tab
-    window.open('https://mobile.metaperson.avatarsdk.com/generator', '_blank');
+    window.open(
+      'https://mobile.metaperson.avatarsdk.com/generator',
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
-  // NEW: Handle Buy Now button click
   const handleBuyNow = () => {
-    if (overlays.length > 0) {
-      // For simplicity, take the first product in overlays
-      // In a real app, you might have a selection mechanism or a shopping cart
-      const productToBuy = overlays[0];
-      localStorage.setItem('productToConfirm', JSON.stringify(productToBuy));
-      navigate('/confirmorder');
-    } else {
-      alert("Please select a product to buy!");
+    if (overlays.length === 0) {
+      alert('Please select a product to buy!');
+      return;
     }
+
+    localStorage.setItem(
+      'productToConfirm',
+      JSON.stringify(overlays[0])
+    );
+
+    navigate('/confirmorder');
   };
 
   return (
     <Box sx={{ minHeight: '100vh', background: '#f4f6f8', p: 4 }}>
-      <Typography variant="h4" textAlign="center" fontWeight="bold" mb={2}>
+      <Typography
+        variant="h4"
+        textAlign="center"
+        fontWeight="bold"
+        mb={2}
+      >
         Virtual Try-On (Mock Test)
       </Typography>
 
       <Box textAlign="center" mb={3}>
-        <input type="file" accept="image/*" onChange={handleAvatarUpload} />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleAvatarUpload}
+        />
       </Box>
 
       <Box display="flex" justifyContent="center" mt={2} position="relative">
@@ -214,15 +248,12 @@ const TryOn = () => {
             <Box
               sx={{
                 position: 'absolute',
-                top: 0,
-                left: 0,
-                height: '100%',
-                width: '100%',
+                inset: 0,
                 zIndex: 20,
                 background: 'rgba(255,255,255,0.6)',
                 display: 'flex',
                 justifyContent: 'center',
-                alignItems: 'center'
+                alignItems: 'center',
               }}
             >
               <CircularProgress size={50} color="secondary" />
@@ -250,60 +281,64 @@ const TryOn = () => {
               Upload Your Avatar
             </Typography>
           )}
-          {/* New Button for MetaPerson Avatar Creation */}
-                <Box sx={{ textAlign: 'center', my: 2 }}> {/* Added Box for centering and margin */}
-                  <Button
-                    variant="contained"
-                    size="medium" // Adjusted size for better fit
-                    sx={{
-                      backgroundColor: '#673ab7', // Deep purple, consistent with TryOn page
-                      color: '#fff',
-                      '&:hover': {
-                        backgroundColor: '#5e35b1', // Slightly darker purple on hover
-                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-                      },
-                      padding: '10px 20px',
-                      fontSize: '1rem',
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                    }}
-                    onClick={handleCreateAvatar}
-                  >
-                    Create Your Avatar with MetaPerson
-                  </Button>
-                </Box>
+
+          <Box sx={{ textAlign: 'center', my: 2, position: 'relative', zIndex: 5 }}>
+            <Button
+              variant="contained"
+              size="medium"
+              sx={{
+                backgroundColor: '#673ab7',
+                color: '#fff',
+                '&:hover': { backgroundColor: '#5e35b1' },
+                padding: '10px 20px',
+                fontSize: '1rem',
+                borderRadius: '8px',
+                textTransform: 'none',
+              }}
+              onClick={handleCreateAvatar}
+            >
+              Create Your Avatar with MetaPerson
+            </Button>
+          </Box>
 
           {overlays.map((item) => (
             <Rnd
               key={item.id}
               position={{ x: item.style.left, y: item.style.top }}
-              size={{ width: item.style.width, height: item.style.height }}
+              size={{
+                width: item.style.width,
+                height: item.style.height,
+              }}
               bounds="parent"
               enableResizing
-              onDragStop={(e, d) => {
-                console.log("Drag stopped. New position:", d.x, d.y);
-                setOverlays(prev =>
-                  prev.map((overlay) =>
-                    overlay.id === item.id
-                      ? { ...overlay, style: { ...overlay.style, top: d.y, left: d.x } }
-                      : overlay
-                  )
-                );
-              }}
-              onResizeStop={(e, direction, ref, delta, position) => {
-                console.log("Resize stopped. New size/position:", parseInt(ref.style.width), parseInt(ref.style.height), position.x, position.y);
-                setOverlays(prev =>
-                  prev.map((overlay) =>
+              onDragStop={(event, data) => {
+                setOverlays((previous) =>
+                  previous.map((overlay) =>
                     overlay.id === item.id
                       ? {
                           ...overlay,
                           style: {
-                            width: parseInt(ref.style.width),
-                            height: parseInt(ref.style.height),
+                            ...overlay.style,
+                            top: data.y,
+                            left: data.x,
+                          },
+                        }
+                      : overlay
+                  )
+                );
+              }}
+              onResizeStop={(event, direction, ref, delta, position) => {
+                setOverlays((previous) =>
+                  previous.map((overlay) =>
+                    overlay.id === item.id
+                      ? {
+                          ...overlay,
+                          style: {
+                            width: parseInt(ref.style.width, 10),
+                            height: parseInt(ref.style.height, 10),
                             top: position.y,
-                            left: position.x
-                          }
+                            left: position.x,
+                          },
                         }
                       : overlay
                   )
@@ -332,14 +367,29 @@ const TryOn = () => {
 
       {overlays.length > 0 && (
         <Box textAlign="center" mt={2}>
-          <Button variant="outlined" color="error" onClick={handleClearOverlays} sx={{ mr: 2 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleClearOverlays}
+            sx={{ mr: 2 }}
+          >
             Clear Products
           </Button>
-          <Button variant="contained" color="success" onClick={runAutoFit} sx={{ mr: 2 }}>
+
+          <Button
+            variant="contained"
+            color="success"
+            onClick={runAutoFit}
+            sx={{ mr: 2 }}
+          >
             AI Best Fit (Mock)
           </Button>
-          {/* NEW: Buy Now Button */}
-          <Button variant="contained" color="primary" onClick={handleBuyNow}>
+
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleBuyNow}
+          >
             Buy Now
           </Button>
         </Box>
@@ -350,8 +400,8 @@ const TryOn = () => {
       </Typography>
 
       <Grid container spacing={2} justifyContent="center">
-        {dummyProducts.map((prod, index) => (
-          <Grid item xs={6} sm={4} md={3} key={index}>
+        {dummyProducts.map((product) => (
+          <Grid item xs={6} sm={4} md={3} key={product.name}>
             <Paper
               sx={{
                 p: 2,
@@ -360,14 +410,18 @@ const TryOn = () => {
                 transition: '0.3s',
                 '&:hover': { boxShadow: 6 },
               }}
-              onClick={() => handleOverlay(prod)}
+              onClick={() => handleOverlay(product)}
             >
               <img
-                src={prod.image}
-                alt={prod.name}
-                style={{ width: '100%', height: '150px', objectFit: 'contain' }}
+                src={product.image}
+                alt={product.name}
+                style={{
+                  width: '100%',
+                  height: '150px',
+                  objectFit: 'contain',
+                }}
               />
-              <Typography mt={1}>{prod.name}</Typography>
+              <Typography mt={1}>{product.name}</Typography>
             </Paper>
           </Grid>
         ))}
