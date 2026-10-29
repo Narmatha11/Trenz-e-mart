@@ -1,11 +1,6 @@
-import React from 'react';
-import { Box, Typography, Grid, Paper, Button, TextField, InputAdornment, IconButton } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import CategoryIcon from '@mui/icons-material/Category';
-import LocalMallIcon from '@mui/icons-material/LocalMall';
-import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import VirtualizationModal from '../components/VirtualizationModal';
 import { useVirtualization } from '../context/VirtualizationContext';
 
@@ -37,6 +32,7 @@ const featuredProducts = [
 const Home = () => {
   const [virtualizeModalOpen, setVirtualizeModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+
   const { setVirtualProduct } = useVirtualization();
   const navigate = useNavigate();
 
@@ -48,17 +44,20 @@ const Home = () => {
   };
 
   const handleVirtualizeConfirm = () => {
+    if (!selectedProduct) return;
+
     setVirtualizeModalOpen(false);
     setVirtualProduct(selectedProduct);
-    localStorage.setItem('virtualProduct', JSON.stringify(selectedProduct));
+    localStorage.setItem(
+      'virtualProduct',
+      JSON.stringify(selectedProduct)
+    );
     navigate('/tryon');
   };
 
   const handleCategoryPress = (path) => {
     navigate(path);
   };
-
-  
 
   return (
     <div style={styles.container}>
@@ -69,68 +68,105 @@ const Home = () => {
         product={selectedProduct}
       />
 
-      {/* Search Bar */}
       <div style={styles.navbar}>
         <div style={styles.logo}>TRENZ</div>
-        <input style={styles.search} placeholder="Search for products, brands and more" />
+
+        <input
+          style={styles.search}
+          placeholder="Search for products, brands and more"
+          aria-label="Search products"
+        />
+
         <div style={styles.navActions}>
-          <button style={styles.button}>Login</button>
-          <button style={styles.button}>Become a Seller</button>
+          <button
+            style={styles.button}
+            onClick={() => navigate('/login')}
+          >
+            Login
+          </button>
+
+          <button
+            style={styles.button}
+            onClick={() => navigate('/seller')}
+          >
+            Become a Seller
+          </button>
+
           <div style={styles.cart}>🛒</div>
         </div>
       </div>
 
-      
-
-      {/* Category Icons */}
       <div style={styles.categories}>
-        {categories.map((cat, i) => (
-          <div key={i} style={styles.categoryItem} onClick={() => handleCategoryPress(cat.path)}>
-            <img src={cat.image} alt={cat.name} style={styles.categoryIcon} />
+        {categories.map((cat) => (
+          <div
+            key={cat.name}
+            style={styles.categoryItem}
+            onClick={() => handleCategoryPress(cat.path)}
+          >
+            <img
+              src={cat.image}
+              alt={cat.name}
+              style={styles.categoryIcon}
+            />
             <div style={styles.categoryLabel}>{cat.name}</div>
           </div>
         ))}
       </div>
 
-      {/* Promo Banner */}
       <div style={styles.promoBanner}>
-        <img src="/assets/Banner.jpg" alt="promo" style={styles.promoImage} />
+        <img
+          src="/assets/Banner.jpg"
+          alt="Promotional banner"
+          style={styles.promoImage}
+        />
       </div>
 
-      {/* Featured Products */}
-      <h2 style={{ margin: '20px 0 10px 20px' }}>Top Deals</h2>
+      <h2 style={{ margin: '20px 0 10px 20px' }}>
+        Top Deals
+      </h2>
+
       <div style={styles.products}>
-        {featuredProducts.map((prod, i) => (
-          <div key={i} style={styles.productCard} onClick={() => handleProductClick(prod)}>
-            <img src={prod.image} alt={prod.name} style={styles.productImage} />
+        {featuredProducts.map((prod) => (
+          <div
+            key={prod.name}
+            style={styles.productCard}
+            onClick={() => handleProductClick(prod)}
+          >
+            <img
+              src={prod.image}
+              alt={prod.name}
+              style={styles.productImage}
+            />
             <div style={styles.productName}>{prod.name}</div>
             <div style={styles.productPrice}>{prod.price}</div>
           </div>
         ))}
       </div>
 
-      {/* Jotform Chatbot */}
       <script src="https://cdn.jotfor.ms/s/umd/latest/for-embedded-agent.js"></script>
+
       <script
         dangerouslySetInnerHTML={{
           __html: `
             window.addEventListener("DOMContentLoaded", function() {
-              window.AgentInitializer.init({
-                rootId: "JotformAgent-0197d57ca8d57f26bdfb5b627b7293910fed",
-                formID: "0197d57ca8d57f26bdfb5b627b7293910fed",
-                domain: "https://www.jotform.com",
-                isInitialOpen: false,
-                isDraggable: false,
-                background: "linear-gradient(180deg, #035C5F 0%, #035C5F 100%)",
-                buttonBackgroundColor: "#8E1CA8",
-                buttonIconColor: "#FFFFFF",
-                customizations: {
-                  greeting: "Yes",
-                  greetingMessage: "Hi! How can I assist you?",
-                  pulse: "Yes",
-                  position: "right"
-                }
-              });
+              if (window.AgentInitializer) {
+                window.AgentInitializer.init({
+                  rootId: "JotformAgent-0197d57ca8d57f26bdfb5b627b7293910fed",
+                  formID: "0197d57ca8d57f26bdfb5b627b7293910fed",
+                  domain: "https://www.jotform.com",
+                  isInitialOpen: false,
+                  isDraggable: false,
+                  background: "linear-gradient(180deg, #035C5F 0%, #035C5F 100%)",
+                  buttonBackgroundColor: "#8E1CA8",
+                  buttonIconColor: "#FFFFFF",
+                  customizations: {
+                    greeting: "Yes",
+                    greetingMessage: "Hi! How can I assist you?",
+                    pulse: "Yes",
+                    position: "right"
+                  }
+                });
+              }
             });
           `,
         }}
@@ -222,6 +258,7 @@ const styles = {
     padding: '10px',
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
     textAlign: 'center',
+    cursor: 'pointer',
   },
   productImage: {
     width: '100%',
